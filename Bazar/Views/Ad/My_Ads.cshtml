@@ -1,0 +1,90 @@
+﻿@model IEnumerable<AdViewModel>
+@{
+    //ViewBag.Title = "Selected Ads for You";
+}
+
+<!-- Модален Прозорец -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: rgba(0, 0, 0, 0.5);">
+            <img id="modalImage" src="" class="w-100" alt="Modal Image" style="max-height: 80vh; object-fit: contain;">
+        </div>
+    </div>
+</div>
+
+<h2 class="text-center">@ViewBag.Title</h2>
+<hr />
+
+<div class="row custom-row">
+    @foreach (var a in Model)
+    {
+        <div class="card custom-card col-md-4">
+            <div class="card-body">
+                <h5 class="card-title mt-1">@a.Name</h5>
+                <img class="card-img-top" src="@a.ImageUrl" alt="Ad Image" onclick="showImageModal('@a.ImageUrl')">
+                <p class="mb-0"><span class="fw-bold">Added on: </span>@a.CreatedOn</p>
+                <p class="mb-0"><span class="fw-bold">Category: </span>@a.Category</p>
+                <p class="mb-0"><span class="fw-bold">Description: </span>@a.Description</p>
+                <p class="mb-0"><span class="fw-bold">Price: </span>@a.Price BGN</p>
+                <p class="mb-0"><span class="fw-bold">Seller: </span>@a.Owner</p>
+            </div>
+
+            @if (User?.Identity?.Name == a.Owner)
+            {
+                <a asp-controller="Ad" asp-action="Edit" asp-route-id="@a.Id"
+                    class="btn btn-warning-custom mb-2 w-100 p-3 fw-bold">Edit the Ad</a>
+                <a class="btn btn-danger-custom mb-2 w-100 p-3 fw-bold"
+                    onclick="confirmDelete('@Url.Action("Delete", "Ad", new { id = @a.Id })')">Delete the Ad</a>
+            }
+        </div>
+    }
+</div>
+
+@{
+    int totalItems = ViewBag.TotalItems;
+    int currentPage = ViewBag.CurrentPage;
+    int pageSize = ViewBag.PageSize;
+    int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+}
+
+<div class="pagination" style="font-size: 20px;">
+    @for (int i = 1; i <= totalPages; i++)
+    {
+        if (i == currentPage)
+        {
+            <span style="color: white; margin-right: 10px;">@i</span>
+        }
+        else
+        {
+            <a asp-action="My_Ads" asp-route-page="@i" style="color: white; margin-right: 10px;">@i</a>
+        }
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+    <script>
+        function confirmDelete(deleteUrl) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = deleteUrl;
+                }
+            });
+        }
+
+        // function for showing the image in a modal window
+        function showImageModal(imageSrc) {
+            $('#modalImage').attr('src', imageSrc);
+            $('#imageModal').modal('show');
+        }
+    </script>
+}

@@ -1,0 +1,161 @@
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model AdSearchViewModel
+
+<h1>
+    <span>Ads - </span>
+    <span>@ViewBag.TotalItems results found</span>
+</h1>
+
+<!-- Модален Прозорец -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: rgba(0, 0, 0, 0.5);">
+            <img id="modalImage" src="" class="w-100" alt="Modal Image" style="max-height: 80vh; object-fit: contain;">
+        </div>
+    </div>
+</div>
+
+<div class="search-form-container">
+    <form id="searchForm" method="get" class="search-form">
+        <div class="form-field">
+            <input type="text" id="title" name="Title" placeholder="Title" class="form-control" />
+        </div>
+
+        <div class="form-field">
+            <select id="categoryName" name="CategoryName" class="form-control">
+                <option value="">All Categories</option>
+                @if (Model.Categories != null && Model.Categories.Any())
+                {
+                    @foreach (var category in Model.Categories)
+                    {
+                        <option value="@category.Name">@category.Name</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="form-field">
+            <input type="text" id="ownerUsername" name="OwnerUsername" placeholder="Owner" class="form-control" />
+        </div>
+
+        <div class="form-field">
+            <input type="number" id="minPrice" name="MinPrice" placeholder="Min Price" class="form-control" />
+        </div>
+
+        <div class="form-field">
+            <input type="number" id="maxPrice" name="Price" placeholder="Max Price" class="form-control" />
+        </div>
+
+        <div class="form-field">
+            <input type="date" id="date" name="Date" class="form-control" />
+        </div>
+
+        <div class="form-field">
+            <button type="submit" class="btn btn-search">Search</button>
+        </div>
+    </form>
+</div>
+
+@if (Model?.Ads != null && Model.Ads.Any())
+{
+    <div class="row custom-row">
+        @foreach (var ad in Model.Ads)
+        {
+            <div class="card custom-card col-md-4">
+                <div class="card-body">
+                    <h5 class="card-title mt-1">@ad.Name</h5>
+                    <img class="card-img-top" src="@ad.ImageUrl" alt="Ad Image" onclick="showImageModal('@ad.ImageUrl')">
+                    <p class="mb-0"><span class="fw-bold">Added on: </span>@ad.CreatedOn.ToShortDateString()</p>
+                    <p class="mb-0"><span class="fw-bold">Category: </span>@ad.Category</p>
+                    <p class="mb-0"><span class="fw-bold">Description: </span>@ad.Description</p>
+                    <p class="mb-0"><span class="fw-bold">Price: </span>@ad.Price BGN</p>
+                    <p class="mb-0"><span class="fw-bold">Seller: </span>@ad.Owner</p>
+                </div>
+
+                @if (User?.Identity?.Name == ad.Owner)
+                {
+                    <a asp-controller="Ad" asp-action="Edit" asp-route-id="@ad.Id"
+                        class="btn btn-warning-custom mb-2 w-100 p-3 fw-bold">Edit the Ad</a>
+                    <button class="btn btn-danger-custom mb-2 w-100 p-3 fw-bold"
+                        onclick="confirmDelete('@Url.Action("Delete", "Ad", new { id = ad.Id })')">
+                        Delete the Ad
+                    </button>
+                }
+                else
+                {
+                    <form asp-controller="Ad" asp-action="AddToCart" asp-route-id="@ad.Id">
+                        <input type="submit" value="Add to Cart" class="fs-6 btn btn-custom mb-3 w-100 p-3 fw-bold" />
+                    </form>
+                }
+            </div>
+        }
+    </div>
+}
+else
+{
+    <p>No results found.</p>
+}
+
+@{
+    int totalItems = ViewBag.TotalItems;
+    int currentPage = ViewBag.CurrentPage;
+    int pageSize = ViewBag.PageSize;
+    int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+}
+
+@for (int i = 1; i <= totalPages; i++)
+{
+    if (i == currentPage)
+    {
+        <span style="color: white; margin-right: 10px;">@i</span>
+    }
+    else
+    {
+        <a href="javascript:goToPage(@i)" style="color: white; margin-right: 10px;">@i</a>
+    }
+}
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+    <script>
+        // function for showing the delete confirmation window - SweetAlert2
+        function confirmDelete(deleteUrl) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = deleteUrl;
+                }
+            });
+        }
+
+        // function for changing the page number in the URL - pagination
+        function goToPage(page) {
+            var currentUrl = window.location.href;
+            var baseUrl = currentUrl.includes("?") ? currentUrl.split("?")[0] : currentUrl;
+            var searchParams = new URLSearchParams(window.location.search);
+
+            // Update the page parameter
+            searchParams.set("page", page);
+
+            // Build the new URL
+            var newUrl = baseUrl + "?" + searchParams.toString();
+            window.location.href = newUrl;
+        }
+
+        // function for showing the image in a modal window
+        function showImageModal(imageSrc) {
+            $('#modalImage').attr('src', imageSrc);
+            $('#imageModal').modal('show');
+        }
+    </script>
+}
